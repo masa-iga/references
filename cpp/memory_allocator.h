@@ -15,14 +15,14 @@ namespace Mif {
         uint32_t getSizeInBytes();
         uint32_t getRemainingSizeInBytes();
 
-        inline void* getStart() { return m_start; }
-        inline void* getMarker() { return m_current; }
-        inline void* getEnd() { return m_end; }
+        inline void* getStart() { return reinterpret_cast<void*>(m_start); }
+        inline void* getMarker() { return reinterpret_cast<void*>(m_current); }
+        inline void* getEnd() { return reinterpret_cast<void*>(m_end); }
 
     private:
-        void* m_start;
-        void* m_end;
-        void* m_current;
+        uintptr_t m_start;
+        uintptr_t m_end;
+        uintptr_t m_current;
 
     };
 
