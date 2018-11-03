@@ -43,12 +43,12 @@ namespace { // for functions
     {
         VPRINTF("base address 0x%p\n", base_);
 
-        const uint64_t exp_start = reinterpret_cast<uint64_t>(base_);
-        const uint64_t exp_end = exp_start + kMemorySize;
+        const uintptr_t exp_start = reinterpret_cast<uint64_t>(base_);
+        const uintptr_t exp_end = exp_start + kMemorySize;
 
-        EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getStart()), exp_start);
-        EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getMarker()), exp_start);
-        EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getEnd()), exp_end);
+        EXPECT_EQ(reinterpret_cast<uintptr_t>(allocator_->getStart()), exp_start);
+        EXPECT_EQ(reinterpret_cast<uintptr_t>(allocator_->getMarker()), exp_start);
+        EXPECT_EQ(reinterpret_cast<uintptr_t>(allocator_->getEnd()), exp_end);
 
         for (uint32_t i = 0; i < 10; ++i)
         {
@@ -56,8 +56,8 @@ namespace { // for functions
             const size_t align = 1 << (rand() % 9);
             allocator_->alloc(size, align);
 
-            EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getStart()), exp_start);
-            EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getEnd()), exp_end);
+            EXPECT_EQ(reinterpret_cast<uintptr_t>(allocator_->getStart()), exp_start);
+            EXPECT_EQ(reinterpret_cast<uintptr_t>(allocator_->getEnd()), exp_end);
         }
     }
 
@@ -65,7 +65,7 @@ namespace { // for functions
     TEST_F(AllocatorTest, sizeAlign)
     {
         VPRINTF("base address 0x%p\n", base_);
-        const void* prev = base_;
+        uintptr_t prev = reinterpret_cast<uintptr_t>(base_);
 
         for (uint32_t i = 0; i < 100; ++i)
         {
@@ -74,14 +74,15 @@ namespace { // for functions
 
             void* const alloc_addr = allocator_->alloc(size, align);
 
-            const size_t alloc_size = reinterpret_cast<size_t>(alloc_addr) - reinterpret_cast<size_t>(prev);
-            const uint64_t alloc_align = reinterpret_cast<uint64_t>(alloc_addr) % align;
+            const uintptr_t alloc_size_as_uintptr_t = reinterpret_cast<uintptr_t>(alloc_addr) - prev;
+            const size_t alloc_size = static_cast<size_t>(alloc_size_as_uintptr_t);
+            const size_t alloc_align = reinterpret_cast<size_t>(alloc_addr) % align;
 
             EXPECT_GE(alloc_size, size);
             EXPECT_LE(alloc_size, size + align - 1);
             EXPECT_TRUE(alloc_align == 0);
 
-            prev = alloc_addr;
+            prev = reinterpret_cast<uintptr_t>(alloc_addr);
         }
     }
 
