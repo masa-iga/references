@@ -16,7 +16,7 @@ namespace Mif {
 
     void* StackAllocator::alloc(size_t size, size_t alignment /* must be 2^x */)
     {
-        assert((alignment & (alignment-1)) == 0 && "alignment must be exponential of 2");
+        assert((alignment & (alignment-1)) == 0 && "alignment must be a power of 2");
 
         const uintptr_t raw_address = m_current + size + alignment;
         const size_t mask = alignment - 1;
