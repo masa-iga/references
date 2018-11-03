@@ -53,7 +53,7 @@ namespace { // for functions
         for (uint32_t i = 0; i < 10; ++i)
         {
             const size_t size = rand() % 0x100000;
-            const size_t align = rand() % 0x100;
+            const size_t align = 1 << (rand() % 9);
             allocator_->alloc(size, align);
 
             EXPECT_EQ(reinterpret_cast<uint64_t>(allocator_->getStart()), exp_start);
@@ -84,6 +84,8 @@ namespace { // for functions
             prev = alloc_addr;
         }
     }
+
+    // Todo: test another functions
 
 } // namespace anonymouse
 

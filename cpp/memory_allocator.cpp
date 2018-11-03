@@ -14,27 +14,17 @@ namespace Mif {
     }
 
 
-    // ToDo: refine alignment
-    void* StackAllocator::alloc(size_t size, size_t align)
+    void* StackAllocator::alloc(size_t size, size_t alignment /* must be 2^x */)
     {
-        uintptr_t aligned_start = m_current;
+        assert((alignment & (alignment-1)) == 0 && "alignment must be exponential of 2");
 
-        if (align > 1)
-        {
-            aligned_start = (aligned_start + (align-1)) & ~(align-1);
-        }
+        const uintptr_t raw_address = m_current + size + alignment;
+        const size_t mask = alignment - 1;
+        const uintptr_t misalignment = raw_address & mask;
+        const uintptr_t adjustment = alignment - misalignment;
 
-        assert(aligned_start < m_end && "exceeds memory capacity\n");
-
-        uintptr_t end = aligned_start + size;
-
-        assert(m_start < end && "illegal memory address\n");
-        assert(end <= m_end && "exceeds memory capacity\n");
-
-        if (end > m_end)
-           return nullptr;
-
-        m_current = end;
+        m_current = raw_address - adjustment;
+        assert(m_current <= m_end && "exceeed memory capacity\n");
 
         return reinterpret_cast<void*>(m_current);
     }
