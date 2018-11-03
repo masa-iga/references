@@ -11,13 +11,14 @@ namespace Mif {
 
         void* alloc(size_t size, size_t align);
         void freeToMarker(void* marker);
+        void reset() { m_current = m_start; };
 
         uint32_t getSizeInBytes();
         uint32_t getRemainingSizeInBytes();
 
-        inline void* getStart() { return reinterpret_cast<void*>(m_start); }
-        inline void* getMarker() { return reinterpret_cast<void*>(m_current); }
-        inline void* getEnd() { return reinterpret_cast<void*>(m_end); }
+        void* getStart() { return reinterpret_cast<void*>(m_start); }
+        void* getMarker() { return reinterpret_cast<void*>(m_current); }
+        void* getEnd() { return reinterpret_cast<void*>(m_end); }
 
     private:
         uintptr_t m_start;
