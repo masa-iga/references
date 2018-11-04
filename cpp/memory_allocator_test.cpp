@@ -10,6 +10,20 @@ fprintf(stdout, __VA_ARGS__); \
 
 namespace { // for constants
     const size_t kMemorySize = 1000 * 1000 * 1000;
+
+    enum class Alignment : size_t
+    {
+        align1 = 0x1 << 0,
+        align2 = 0x1 << 1,
+        align4 = 0x1 << 2,
+        align8 = 0x1 << 3,
+        align16 = 0x1 << 4,
+        align32 = 0x1 << 5,
+        align64 = 0x1 << 6,
+        align128 = 0x1 << 7,
+        align256 = 0x1 << 8,
+        align512 = 0x1 << 9
+    };
 } // namespace anonymouse
 
 namespace { // for test fixture
@@ -58,9 +72,10 @@ namespace { // for functions
         for (uint32_t i = 0; i < 10; ++i)
         {
             const size_t size = rand() % 0x100000;
-            const size_t align = 1 << (rand() % 9);
+            const size_t align = 1 << (rand() % 10);
 
             allocated_size_worst += size + (align - 1);
+
             if (allocated_size_worst >= kMemorySize)
             {
                 VPRINTF("might not have enough memory capacity. (%zd)\n", allocated_size_worst);
@@ -88,32 +103,36 @@ namespace { // for functions
     TEST_F(AllocatorTest, sizeAlign)
     {
         VPRINTF("base address 0x%p\n", base_);
+
         uintptr_t prev = reinterpret_cast<uintptr_t>(base_);
         size_t allocated_size = 0;
 
         for (uint32_t i = 0; i < 100; ++i)
         {
             const size_t size = rand() % (16 * 1000 * 1000);
-            const size_t align = 0x1;
+            const size_t alignment = (size_t)Alignment::align1;
 
-            allocated_size += size; // no need to care about alignment since align = 1
+            allocated_size += size; // no need to care about alignment since with Alignment::align1
+
             if (allocated_size >= kMemorySize)
             {
                 VPRINTF("do not have enough memory capacity. (%zd)\n", allocated_size);
                 break;
             }
 
-            void* const alloc_addr = allocator_->alloc(size, align);
+            void* const alloc_addr = allocator_->alloc(size, alignment);
 
-            const uintptr_t alloc_size_as_uintptr_t = reinterpret_cast<uintptr_t>(alloc_addr) - prev;
-            const size_t alloc_size = static_cast<size_t>(alloc_size_as_uintptr_t);
-            const size_t alloc_align = reinterpret_cast<size_t>(alloc_addr) % align;
+            {
+                const size_t alloc_size = (size_t)((uintptr_t)alloc_addr - prev);
+                const size_t alloc_alignment = (size_t)alloc_addr % alignment;
+                const void* const current = (void*)((uintptr_t)base_ + allocated_size);
 
-            EXPECT_GE(alloc_size, size);
-            EXPECT_LE(alloc_size, size + align - 1);
-            EXPECT_TRUE(alloc_align == 0);
-            EXPECT_EQ(allocator_->getSizeInBytes(), allocated_size);
-            EXPECT_EQ(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size);
+                EXPECT_EQ(alloc_size, size);
+                EXPECT_TRUE(alloc_alignment == 0);
+                EXPECT_EQ(allocator_->getCurrent(), current);
+                EXPECT_EQ(allocator_->getSizeInBytes(), allocated_size);
+                EXPECT_EQ(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size);
+            }
 
             prev = reinterpret_cast<uintptr_t>(alloc_addr);
         }
@@ -122,9 +141,16 @@ namespace { // for functions
 
         EXPECT_EQ(base_, allocator_->getCurrent());
         EXPECT_EQ(allocator_->getStart(), allocator_->getCurrent());
-    }
 
-    // Todo: test another functions
+        // Todo: test alignment 4
+        {
+            ;
+        }
+
+        // Todo: test alignment 16
+
+        // Todo: test alignment random
+    }
 
 } // namespace anonymouse
 
