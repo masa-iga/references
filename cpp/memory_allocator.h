@@ -10,15 +10,14 @@ namespace Mif {
         StackAllocator(void* start, size_t size);
 
         void* alloc(size_t size, size_t align);
-        void freeToMarker(void* marker);
+        //void freeToMarker(void* marker);
         void reset() { m_current = m_start; };
 
-        uint32_t getSizeInBytes();
-        uint32_t getRemainingSizeInBytes();
-
         void* getStart() { return reinterpret_cast<void*>(m_start); }
-        void* getMarker() { return reinterpret_cast<void*>(m_current); }
+        void* getCurrent() { return reinterpret_cast<void*>(m_current); }
         void* getEnd() { return reinterpret_cast<void*>(m_end); }
+        uint32_t getSizeInBytes() { return static_cast<uint32_t>(m_current - m_start); }
+        uint32_t getRemainingSizeInBytes() { return static_cast<uint32_t>(m_end - m_current); }
 
     private:
         uintptr_t m_start;
