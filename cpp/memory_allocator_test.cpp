@@ -67,18 +67,18 @@ namespace { // for functions
             EXPECT_EQ(allocator_->getRemainingSizeInBytes(), kMemorySize);
         }
 
-        size_t allocated_size_worst = 0;
+        size_t allocated_size_max = 0;
 
         for (uint32_t i = 0; i < 10; ++i)
         {
             const size_t size = rand() % 0x100000;
             const size_t align = 1 << (rand() % 10);
 
-            allocated_size_worst += size + (align - 1);
+            allocated_size_max += size + (align - 1);
 
-            if (allocated_size_worst >= kMemorySize)
+            if (allocated_size_max >= kMemorySize)
             {
-                VPRINTF("might not have enough memory capacity. (%zd)\n", allocated_size_worst);
+                VPRINTF("might not have enough memory capacity. (%zd)\n", allocated_size_max);
                 break;
             }
 
@@ -104,7 +104,7 @@ namespace { // for functions
     {
         VPRINTF("base address 0x%p\n", base_);
 
-        uintptr_t prev = reinterpret_cast<uintptr_t>(base_);
+        uintptr_t prev = (uintptr_t)base_;
         size_t allocated_size = 0;
 
         for (uint32_t i = 0; i < 100; ++i)
@@ -123,28 +123,51 @@ namespace { // for functions
             void* const alloc_addr = allocator_->alloc(size, alignment);
 
             {
-                const size_t alloc_size = (size_t)((uintptr_t)alloc_addr - prev);
-                const size_t alloc_alignment = (size_t)alloc_addr % alignment;
-                const void* const current = (void*)((uintptr_t)base_ + allocated_size);
-
-                EXPECT_EQ(alloc_size, size);
-                EXPECT_TRUE(alloc_alignment == 0);
-                EXPECT_EQ(allocator_->getCurrent(), current);
+                EXPECT_EQ((uintptr_t)alloc_addr, prev);
+                EXPECT_TRUE(((uintptr_t)alloc_addr % alignment) == 0);
+                EXPECT_EQ((uintptr_t)allocator_->getCurrent(), prev + size);
                 EXPECT_EQ(allocator_->getSizeInBytes(), allocated_size);
                 EXPECT_EQ(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size);
             }
 
-            prev = reinterpret_cast<uintptr_t>(alloc_addr);
+            prev = (uintptr_t)alloc_addr;
         }
 
         allocator_->reset();
+        prev = (uintptr_t)base_;
+        allocated_size = 0;
 
+        EXPECT_EQ(base_, allocator_->getStart());
         EXPECT_EQ(base_, allocator_->getCurrent());
-        EXPECT_EQ(allocator_->getStart(), allocator_->getCurrent());
 
-        // Todo: test alignment 4
+        for (uint32_t i = 0; i < 100; ++i)
         {
-            ;
+            const size_t size = rand() % (16 * 1000 * 1000);
+            const size_t alignment = (size_t)Alignment::align4;
+
+            if (allocated_size + size >= kMemorySize)
+            {
+                VPRINTF("do not have enough memory capacity. (%zd)\n", allocated_size + size);
+                break;
+            }
+
+            void* const alloc_addr = allocator_->alloc(size, alignment);
+
+            {
+                EXPECT_GE((uintptr_t)alloc_addr, prev);
+                EXPECT_LT((uintptr_t)alloc_addr, prev + alignment);
+                EXPECT_TRUE(((uintptr_t)alloc_addr % alignment) == 0);
+
+                EXPECT_GE((uintptr_t)allocator_->getCurrent(), prev + size);
+                EXPECT_LT((uintptr_t)allocator_->getCurrent(), prev + size + alignment);
+                EXPECT_GE(allocator_->getSizeInBytes(), allocated_size + size);
+                EXPECT_LT(allocator_->getSizeInBytes(), allocated_size + size + alignment);
+                EXPECT_GT(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size - alignment);
+                EXPECT_LE(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size);
+            }
+
+            prev = (uintptr_t)allocator_->getCurrent();
+            allocated_size = (uintptr_t)allocator_->getCurrent() - (uintptr_t)base_;
         }
 
         // Todo: test alignment 16
