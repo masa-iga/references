@@ -130,7 +130,7 @@ namespace { // for functions
                 EXPECT_EQ(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size);
             }
 
-            prev = (uintptr_t)alloc_addr;
+            prev = (uintptr_t)allocator_->getCurrent();
         }
 
         allocator_->reset();

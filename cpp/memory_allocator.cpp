@@ -18,15 +18,16 @@ namespace Mif {
     {
         assert((alignment & (alignment-1)) == 0 && "alignment must be a power of 2");
 
-        const uintptr_t raw_address = m_current + size + alignment;
+        const uintptr_t raw_address = m_current;
         const size_t mask = alignment - 1;
         const uintptr_t misalignment = raw_address & mask;
-        const uintptr_t adjustment = alignment - misalignment;
+        const uintptr_t adjustment = mask & (alignment - misalignment);
+        const uintptr_t aligned_address = raw_address + adjustment;
+        m_current = aligned_address + size;
 
-        m_current = raw_address - adjustment;
         assert(m_current <= m_end && "exceeed memory capacity\n");
 
-        return reinterpret_cast<void*>(m_current);
+        return reinterpret_cast<void*>(aligned_address);
     }
 
 } // namespace Mif
