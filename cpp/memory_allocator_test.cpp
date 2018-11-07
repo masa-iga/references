@@ -13,6 +13,7 @@ namespace { // for constants
 
     enum class Alignment : size_t
     {
+        size = 10,
         align1 = 0x1 << 0,
         align2 = 0x1 << 1,
         align4 = 0x1 << 2,
@@ -24,6 +25,24 @@ namespace { // for constants
         align256 = 0x1 << 8,
         align512 = 0x1 << 9
     };
+
+    size_t getRandomAlignment()
+    {
+        switch (rand() % (int)Alignment::size)
+        {
+            case 0: return (size_t)Alignment::align1;
+            case 1: return (size_t)Alignment::align2;
+            case 2: return (size_t)Alignment::align4;
+            case 3: return (size_t)Alignment::align8;
+            case 4: return (size_t)Alignment::align16;
+            case 5: return (size_t)Alignment::align32;
+            case 6: return (size_t)Alignment::align64;
+            case 7: return (size_t)Alignment::align128;
+            case 8: return (size_t)Alignment::align256;
+            case 9: return (size_t)Alignment::align512;
+            default: return (size_t)Alignment::align1;
+        }
+    }
 } // namespace anonymouse
 
 namespace { // for test fixture
@@ -170,9 +189,79 @@ namespace { // for functions
             allocated_size = (uintptr_t)allocator_->getCurrent() - (uintptr_t)base_;
         }
 
-        // Todo: test alignment 16
+        allocator_->reset();
+        prev = (uintptr_t)base_;
+        allocated_size = 0;
 
-        // Todo: test alignment random
+        EXPECT_EQ(base_, allocator_->getStart());
+        EXPECT_EQ(base_, allocator_->getCurrent());
+
+        for (uint32_t i = 0; i < 100; ++i)
+        {
+            const size_t size = rand() % (16 * 1000 * 1000);
+            const size_t alignment = (size_t)Alignment::align16;
+
+            if (allocated_size + size >= kMemorySize)
+            {
+                VPRINTF("do not have enough memory capacity. (%zd)\n", allocated_size + size);
+                break;
+            }
+
+            void* const alloc_addr = allocator_->alloc(size, alignment);
+
+            {
+                EXPECT_GE((uintptr_t)alloc_addr, prev);
+                EXPECT_LT((uintptr_t)alloc_addr, prev + alignment);
+                EXPECT_TRUE(((uintptr_t)alloc_addr % alignment) == 0);
+
+                EXPECT_GE((uintptr_t)allocator_->getCurrent(), prev + size);
+                EXPECT_LT((uintptr_t)allocator_->getCurrent(), prev + size + alignment);
+                EXPECT_GE(allocator_->getSizeInBytes(), allocated_size + size);
+                EXPECT_LT(allocator_->getSizeInBytes(), allocated_size + size + alignment);
+                EXPECT_GT(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size - alignment);
+                EXPECT_LE(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size);
+            }
+
+            prev = (uintptr_t)allocator_->getCurrent();
+            allocated_size = (uintptr_t)allocator_->getCurrent() - (uintptr_t)base_;
+        }
+
+        allocator_->reset();
+        prev = (uintptr_t)base_;
+        allocated_size = 0;
+
+        EXPECT_EQ(base_, allocator_->getStart());
+        EXPECT_EQ(base_, allocator_->getCurrent());
+
+        for (uint32_t i = 0; i < 100; ++i)
+        {
+            const size_t size = rand() % (16 * 1000 * 1000);
+            const size_t alignment = getRandomAlignment();
+
+            if (allocated_size + size >= kMemorySize)
+            {
+                VPRINTF("do not have enough memory capacity. (%zd)\n", allocated_size + size);
+                break;
+            }
+
+            void* const alloc_addr = allocator_->alloc(size, alignment);
+
+            {
+                EXPECT_GE((uintptr_t)alloc_addr, prev);
+                EXPECT_LT((uintptr_t)alloc_addr, prev + alignment);
+                EXPECT_TRUE(((uintptr_t)alloc_addr % alignment) == 0);
+
+                EXPECT_GE((uintptr_t)allocator_->getCurrent(), prev + size);
+                EXPECT_LT((uintptr_t)allocator_->getCurrent(), prev + size + alignment);
+                EXPECT_GE(allocator_->getSizeInBytes(), allocated_size + size);
+                EXPECT_LT(allocator_->getSizeInBytes(), allocated_size + size + alignment);
+                EXPECT_GT(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size - alignment);
+                EXPECT_LE(allocator_->getRemainingSizeInBytes(), kMemorySize - allocated_size - size);
+            }
+
+            prev = (uintptr_t)allocator_->getCurrent();
+            allocated_size = (uintptr_t)allocator_->getCurrent() - (uintptr_t)base_;
+        }
     }
 
 } // namespace anonymouse
